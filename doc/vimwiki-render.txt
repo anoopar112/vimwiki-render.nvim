@@ -1,0 +1,131 @@
+*vimwiki-render.txt*   Fast static compiler, live server, and browser preview for Vimwiki
+
+==============================================================================
+CONTENTS                                               *vimwiki-render-contents*
+
+    1. Introduction ................................... |vimwiki-render-intro|
+    2. Installation ................................... |vimwiki-render-install|
+    3. Configuration .................................. |vimwiki-render-config|
+    4. Commands ....................................... |vimwiki-render-commands|
+    5. Keymaps ........................................ |vimwiki-render-keymaps|
+    6. Architecture ................................... |vimwiki-render-architecture|
+
+==============================================================================
+1. INTRODUCTION                                           *vimwiki-render-intro*
+
+|vimwiki-render.nvim| is a lightweight, asynchronous Neovim companion plugin
+for Vimwiki knowledge bases. It hooks into your markdown notes to provide:
+
+- Automatic background compilation to responsive static HTML on save (:w).
+- Cross-platform previewing of the compiled HTML note in your browser.
+- Live development server management with SSE auto-reload.
+- Automated folder index synchronization (`index.md`).
+- Publication-ready PDF book and chapter generation.
+- Full compatibility with |render-markdown.nvim| and Tree-sitter.
+
+==============================================================================
+2. INSTALLATION                                         *vimwiki-render-install*
+
+Using lazy.nvim: >lua
+    {
+        "anoopar112/vimwiki-render.nvim",
+        ft = { "markdown", "vimwiki" },
+        opts = {
+            wiki_path = "~/Documents/vimwiki",
+            auto_compile = true,
+        },
+    }
+<
+Using packer.nvim: >lua
+    use({
+        "anoopar112/vimwiki-render.nvim",
+        config = function()
+            require("vimwiki-render").setup({
+                wiki_path = "~/Documents/vimwiki",
+            })
+        end,
+    })
+<
+==============================================================================
+3. CONFIGURATION                                         *vimwiki-render-config*
+
+Call setup() with your configuration table: >lua
+    require("vimwiki-render").setup({
+        -- Path to your Vimwiki repository.
+        -- If omitted, auto-detects from vim.g.vimwiki_list[1].path
+        wiki_path = "~/Documents/vimwiki",
+
+        -- Auto-compile to HTML on buffer save (:w)
+        auto_compile = true,
+
+        -- "all" (rebuild entire wiki + search index) or "current" (active file only)
+        compile_mode = "all",
+
+        -- Debounce delay in ms to avoid rapid overlapping builds
+        debounce_ms = 250,
+
+        -- Show vim.notify desktop notifications
+        notify = true,
+
+        -- Live development server settings
+        server = {
+            port = 3000,
+            auto_open = true,
+        },
+
+        -- Set composite filetype tasks.vimwiki.markdown for render-markdown.nvim
+        set_composite_filetype = true,
+
+        -- Optional quick keymaps
+        mappings = {
+            enable = false,
+            build  = "<leader>wb",
+            open   = "<leader>wo",
+            serve  = "<leader>ws",
+            stop   = "<leader>wx",
+            pdf    = "<leader>wp",
+            sync   = "<leader>wi",
+            status = "<leader>w?",
+        },
+    })
+<
+==============================================================================
+4. COMMANDS                                           *vimwiki-render-commands*
+
+:WikiBuild [all|<file>]                                            *:WikiBuild*
+    Compiles all wiki markdown files into static HTML in `dist/`.
+    Optionally pass a note filename to compile a single page.
+
+:WikiOpen [file]                                                    *:WikiOpen*
+    Opens the current note's rendered HTML page in your default browser.
+    If the current buffer is outside the wiki, opens `dist/index.html`.
+
+:WikiServe                                                         *:WikiServe*
+    Starts the live development server at `http://localhost:3000` with
+    automatic browser refresh on save.
+
+:WikiStop                                                           *:WikiStop*
+    Stops the active live server process.
+
+:WikiStatus                                                       *:WikiStatus*
+    Displays the live server state, note counts, and compilation metrics.
+
+:WikiPdf [book|all|<file>]                                          *:WikiPdf*
+    Compiles wiki notes into vector PDFs using headless Chrome.
+
+:WikiIndex / :WikiSync                                   *:WikiIndex* *:WikiSync*
+    Synchronizes parent folder `index.md` files with existing notes.
+
+==============================================================================
+5. ARCHITECTURE                                   *vimwiki-render-architecture*
+
+The plugin coordinates between Neovim and the local node build toolchain:
+- `tools/build.js`: Compiles markdown using `marked` & `highlight.js`.
+- `tools/server.js`: SSE-backed live preview webserver.
+- `tools/pdf.js`: Headless Chrome PDF exporter.
+- `tools/index-sync.js`: Breadcrumb & index generator.
+
+All jobs execute non-blocking in the background using `vim.fn.jobstart`.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
