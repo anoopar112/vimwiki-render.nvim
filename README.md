@@ -33,6 +33,7 @@ An asynchronous, modern Neovim companion plugin for **Vimwiki** knowledge bases.
 {
   "anoopar112/vimwiki-render.nvim",
   dependencies = { "vimwiki/vimwiki" },
+  build = "npm install",
   ft = { "markdown", "vimwiki" },
   opts = {
     -- Path to your Vimwiki repository (auto-detected from vim.g.vimwiki_list if omitted)

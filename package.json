@@ -1,0 +1,17 @@
+{
+  "name": "vimwiki-render",
+  "version": "1.0.0",
+  "description": "Asynchronous static site generator, live reload dev server, and PDF exporter for Vimwiki",
+  "main": "tools/build.js",
+  "scripts": {
+    "build": "node tools/build.js",
+    "serve": "node tools/server.js",
+    "sync": "node tools/index-sync.js",
+    "pdf": "node tools/pdf.js"
+  },
+  "dependencies": {
+    "highlight.js": "^11.12.0",
+    "marked": "^18.0.13"
+  },
+  "license": "MIT"
+}

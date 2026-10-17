@@ -31,6 +31,10 @@ function M.start()
 	end
 
 	server_job = vim.fn.jobstart(cmd, {
+		cwd = cfg.wiki_path,
+		env = {
+			VIMWIKI_DIR = cfg.wiki_path,
+		},
 		detach = true,
 		on_exit = function()
 			server_job = nil

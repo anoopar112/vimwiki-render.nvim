@@ -72,8 +72,17 @@ function M.setup(user_opts)
 		end
 	end
 
+	local plugin_root = vim.fn.fnamemodify(debug.getinfo(1, "S").source:sub(2), ":p:h:h:h")
+	local internal_tools = plugin_root .. "/tools"
+
 	M.options.wiki_path = normalize_path(M.options.wiki_path)
-	M.options.tools_dir = M.options.tools_dir and normalize_path(M.options.tools_dir) or (M.options.wiki_path .. "/tools")
+	if M.options.tools_dir then
+		M.options.tools_dir = normalize_path(M.options.tools_dir)
+	elseif vim.fn.isdirectory(internal_tools) == 1 then
+		M.options.tools_dir = normalize_path(internal_tools)
+	else
+		M.options.tools_dir = normalize_path(M.options.wiki_path .. "/tools")
+	end
 	M.options.dist_dir = M.options.dist_dir and normalize_path(M.options.dist_dir) or (M.options.wiki_path .. "/dist")
 	M.options.pdf_dir = M.options.pdf_dir and normalize_path(M.options.pdf_dir) or (M.options.wiki_path .. "/pdf")
 

@@ -23,6 +23,10 @@ function M.export(target)
 	local stderr_chunks = {}
 
 	vim.fn.jobstart(cmd, {
+		cwd = cfg.wiki_path,
+		env = {
+			VIMWIKI_DIR = cfg.wiki_path,
+		},
 		detach = true,
 		on_stderr = function(_, data)
 			if data then
