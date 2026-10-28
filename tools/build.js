@@ -441,7 +441,7 @@ function compileFile(fileRel, allFiles, markedParser) {
   <link rel="stylesheet" href="${rootRel}assets/style.css">
 </head>
 <body data-root="${rootRel}">
-  <script>(function(){if(localStorage.getItem('wiki-sidebar-collapsed')==='1'){document.body.classList.add('sidebar-collapsed');}})();</script>
+  <script>(function(){if(localStorage.getItem('wiki-sidebar-collapsed')==='1'){document.body.classList.add('sidebar-collapsed');}var fs=localStorage.getItem('wiki-print-font-size');if(fs){document.documentElement.style.setProperty('--print-base-font-size',fs);}})();</script>
   <!-- Sidebar -->
   <aside id="sidebar">
     <div class="sidebar-header">
@@ -493,6 +493,50 @@ function compileFile(fileRel, allFiles, markedParser) {
     <!-- Page Content Container -->
     <div id="content-container">
       <main id="article-content">
+        <!-- Print / PDF Control Bar -->
+        <div class="print-toolbar" id="print-toolbar">
+          <div class="print-toolbar-main">
+            <div class="print-toolbar-group">
+              <span class="print-toolbar-icon">${UI_ICONS.pdf}</span>
+              <span class="print-toolbar-title">Print &amp; PDF</span>
+            </div>
+            <div class="print-toolbar-group">
+              <label for="print-font-size-select" class="print-toolbar-label">Font Size:</label>
+              <select id="print-font-size-select" class="print-select" aria-label="Print font size">
+                <option value="9pt">Small (9pt)</option>
+                <option value="10pt">Compact (10pt)</option>
+                <option value="11pt" selected>Normal (11pt)</option>
+                <option value="12pt">Medium (12pt)</option>
+                <option value="13.5pt">Large (13.5pt)</option>
+                <option value="15pt">Extra Large (15pt)</option>
+              </select>
+            </div>
+            <div class="print-toolbar-group print-sections-manager">
+              <button id="print-sections-toggle-btn" class="print-toolbar-btn" type="button" aria-expanded="false" title="Choose sections to print">
+                <span id="print-sections-summary">Sections (All included)</span>
+                <span class="dropdown-chevron">${UI_ICONS.chevron}</span>
+              </button>
+              <div id="print-sections-dropdown" class="print-sections-dropdown">
+                <div class="print-dropdown-header">
+                  <span>Sections to Print</span>
+                  <div class="print-dropdown-actions">
+                    <button type="button" id="print-select-all-btn" class="print-link-btn">All</button>
+                    <span class="sep">|</span>
+                    <button type="button" id="print-deselect-all-btn" class="print-link-btn">None</button>
+                  </div>
+                </div>
+                <div id="print-sections-checklist" class="print-sections-checklist">
+                </div>
+              </div>
+            </div>
+            <div class="print-toolbar-group print-toolbar-actions">
+              <button id="print-execute-btn" class="print-toolbar-btn print-primary-btn" type="button" title="Print document or save as PDF">
+                ${UI_ICONS.pdf}
+                <span>Print / Save PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
         ${parsedHtml}
       </main>
     </div>

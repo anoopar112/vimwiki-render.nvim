@@ -335,8 +335,9 @@
         }
       }
 
-      // 10. Re-initialize TOC Spy
+      // 10. Re-initialize TOC Spy & Print Controls
       initTocSpy();
+      initPrintControls();
 
       // Close mobile drawer if open
       if (sidebar) sidebar.classList.remove('open');
@@ -695,7 +696,222 @@
     } catch (e) {}
   }
 
-  // --- 9. Initialization ---
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  // --- 9. Print Controls & Section Exclusion ---
+  function initPrintControls() {
+    const article = document.getElementById('article-content');
+    if (!article) return;
+
+    // A. Print Font Size Handling
+    const fontSizeSelect = document.getElementById('print-font-size-select');
+    const savedFontSize = localStorage.getItem('wiki-print-font-size') || '11pt';
+    document.documentElement.style.setProperty('--print-base-font-size', savedFontSize);
+    if (fontSizeSelect) {
+      fontSizeSelect.value = savedFontSize;
+      fontSizeSelect.onchange = () => {
+        const val = fontSizeSelect.value;
+        document.documentElement.style.setProperty('--print-base-font-size', val);
+        localStorage.setItem('wiki-print-font-size', val);
+      };
+    }
+
+    // B. Grouping Article into Sections
+    if (!article.querySelector('.wiki-content-section')) {
+      const headings = Array.from(article.querySelectorAll('h2'));
+      const splitSelector = headings.length > 0 ? 'h2' : (article.querySelectorAll('h3').length > 0 ? 'h3' : null);
+
+      const children = Array.from(article.childNodes);
+      const sections = [];
+      let currentSection = document.createElement('section');
+      currentSection.className = 'wiki-content-section wiki-intro-section';
+      currentSection.setAttribute('data-section-title', 'Overview & Introduction');
+      sections.push(currentSection);
+
+      for (const child of children) {
+        // Keep the print-toolbar outside sections
+        if (child.nodeType === Node.ELEMENT_NODE && child.id === 'print-toolbar') {
+          continue;
+        }
+
+        if (child.nodeType === Node.ELEMENT_NODE && splitSelector && child.matches(splitSelector)) {
+          currentSection = document.createElement('section');
+          currentSection.className = 'wiki-content-section';
+          const headingText = child.textContent.replace(/^#\s*/, '').trim();
+          currentSection.setAttribute('data-section-title', headingText || 'Section');
+          sections.push(currentSection);
+        }
+        currentSection.appendChild(child);
+      }
+
+      // Re-append sections into article (leaving toolbar at top)
+      const toolbar = document.getElementById('print-toolbar');
+      article.innerHTML = '';
+      if (toolbar) article.appendChild(toolbar);
+
+      sections.forEach(sec => {
+        if (sec.children.length > 0 || sec.textContent.trim().length > 0) {
+          article.appendChild(sec);
+        }
+      });
+    }
+
+    // C. Attach Inline Print Toggle Buttons to Section Headings
+    const allSections = Array.from(article.querySelectorAll('.wiki-content-section'));
+    allSections.forEach((section, idx) => {
+      const heading = section.querySelector('h1, h2, h3');
+      if (heading && !heading.querySelector('.section-print-toggle')) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'section-print-toggle';
+        toggleBtn.setAttribute('data-section-idx', idx);
+        toggleBtn.setAttribute('title', 'Exclude this section from printing');
+        toggleBtn.setAttribute('aria-label', 'Toggle print for this section');
+        toggleBtn.innerHTML = `
+          <svg class="print-toggle-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9V2h12v7"></path>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          <span class="print-status-label">Print</span>`;
+
+        toggleBtn.onclick = (e) => {
+          e.stopPropagation();
+          const isExcluded = section.classList.toggle('print-excluded');
+          updateSectionState(idx, isExcluded);
+        };
+        heading.appendChild(toggleBtn);
+      }
+    });
+
+    // D. Build Checklist in the Print Toolbar Dropdown
+    const checklistContainer = document.getElementById('print-sections-checklist');
+    if (checklistContainer) {
+      checklistContainer.innerHTML = '';
+      allSections.forEach((section, idx) => {
+        const title = section.getAttribute('data-section-title') || `Section ${idx + 1}`;
+        const item = document.createElement('label');
+        item.className = 'print-section-check-item';
+        item.innerHTML = `
+          <input type="checkbox" data-section-idx="${idx}" checked>
+          <span class="sec-label" title="${escapeHtml(title)}">${escapeHtml(title)}</span>`;
+
+        const checkbox = item.querySelector('input');
+        checkbox.onchange = () => {
+          const isExcluded = !checkbox.checked;
+          updateSectionState(idx, isExcluded);
+        };
+
+        checklistContainer.appendChild(item);
+      });
+    }
+
+    // Helper to sync state between section button, checkbox, and toolbar summary
+    function updateSectionState(idx, isExcluded) {
+      const section = allSections[idx];
+      if (!section) return;
+
+      if (isExcluded) {
+        section.classList.add('print-excluded');
+      } else {
+        section.classList.remove('print-excluded');
+      }
+
+      // Update inline button
+      const inlineBtn = section.querySelector('.section-print-toggle');
+      if (inlineBtn) {
+        if (isExcluded) {
+          inlineBtn.classList.add('excluded');
+          inlineBtn.setAttribute('title', 'Section excluded from print. Click to include.');
+          inlineBtn.querySelector('.print-status-label').textContent = 'No Print';
+        } else {
+          inlineBtn.classList.remove('excluded');
+          inlineBtn.setAttribute('title', 'Exclude this section from printing');
+          inlineBtn.querySelector('.print-status-label').textContent = 'Print';
+        }
+      }
+
+      // Update dropdown checkbox
+      if (checklistContainer) {
+        const checkbox = checklistContainer.querySelector(`input[data-section-idx="${idx}"]`);
+        if (checkbox) checkbox.checked = !isExcluded;
+      }
+
+      // Update summary counter
+      updateSummaryCounter();
+    }
+
+    function updateSummaryCounter() {
+      const summaryEl = document.getElementById('print-sections-summary');
+      if (!summaryEl) return;
+      const total = allSections.length;
+      const excluded = article.querySelectorAll('.wiki-content-section.print-excluded').length;
+      const included = total - excluded;
+
+      if (total <= 1) {
+        summaryEl.textContent = '1 Section';
+      } else if (excluded === 0) {
+        summaryEl.textContent = `Sections (${total}/${total} Included)`;
+      } else if (included === 0) {
+        summaryEl.textContent = 'Sections (None Included)';
+      } else {
+        summaryEl.textContent = `Sections (${included}/${total} Included)`;
+      }
+    }
+
+    // Dropdown open / close toggle
+    const toggleBtn = document.getElementById('print-sections-toggle-btn');
+    const dropdown = document.getElementById('print-sections-dropdown');
+    if (toggleBtn && dropdown) {
+      toggleBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.classList.toggle('active');
+        toggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      };
+
+      document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && !toggleBtn.contains(e.target)) {
+          dropdown.classList.remove('active');
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    // Select All / Deselect All
+    const selectAllBtn = document.getElementById('print-select-all-btn');
+    const deselectAllBtn = document.getElementById('print-deselect-all-btn');
+    if (selectAllBtn) {
+      selectAllBtn.onclick = (e) => {
+        e.preventDefault();
+        allSections.forEach((_, idx) => updateSectionState(idx, false));
+      };
+    }
+    if (deselectAllBtn) {
+      deselectAllBtn.onclick = (e) => {
+        e.preventDefault();
+        allSections.forEach((_, idx) => updateSectionState(idx, true));
+      };
+    }
+
+    // Print execute button
+    const executeBtn = document.getElementById('print-execute-btn');
+    if (executeBtn) {
+      executeBtn.onclick = () => window.print();
+    }
+
+    // Initialize summary count
+    updateSummaryCounter();
+  }
+
+  // --- 10. Initialization ---
   document.addEventListener('DOMContentLoaded', () => {
     initScrollRestoration();
     initTheme();
@@ -704,6 +920,7 @@
     initPjax();
     initSearch();
     initLiveReload();
+    initPrintControls();
 
     const themeBtn = document.getElementById('theme-toggle-btn');
     if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
