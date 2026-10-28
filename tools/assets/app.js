@@ -32,7 +32,7 @@
     }
   }
 
-  // --- 2. Sidebar Collapsible Sections ---
+  // --- 2. Sidebar Collapsible Sections & Sidebar Visibility Toggle ---
   function initSidebar() {
     const headers = document.querySelectorAll('.nav-section-title');
     headers.forEach(header => {
@@ -57,9 +57,50 @@
       }
     });
 
+    const sidebar = document.getElementById('sidebar');
+    const collapseBtn = document.getElementById('sidebar-collapse-btn');
+    const expandBtn = document.getElementById('sidebar-expand-btn');
+
+    function setSidebarCollapsed(collapsed) {
+      if (collapsed) {
+        document.body.classList.add('sidebar-collapsed');
+        localStorage.setItem('wiki-sidebar-collapsed', '1');
+      } else {
+        document.body.classList.remove('sidebar-collapsed');
+        localStorage.setItem('wiki-sidebar-collapsed', '0');
+      }
+    }
+
+    if (collapseBtn) {
+      collapseBtn.onclick = (e) => {
+        e.stopPropagation();
+        setSidebarCollapsed(true);
+        if (sidebar) sidebar.classList.remove('open');
+      };
+    }
+
+    if (expandBtn) {
+      expandBtn.onclick = (e) => {
+        e.stopPropagation();
+        setSidebarCollapsed(false);
+      };
+    }
+
+    // Keyboard shortcut Cmd+B or Ctrl+B to toggle sidebar
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+        const searchModal = document.getElementById('search-modal');
+        if (searchModal && searchModal.classList.contains('active')) return;
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+        const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+        setSidebarCollapsed(!isCollapsed);
+      }
+    });
+
     // Mobile menu toggle
     const mobileBtn = document.getElementById('mobile-menu-btn');
-    const sidebar = document.getElementById('sidebar');
     if (mobileBtn && sidebar) {
       mobileBtn.onclick = (e) => {
         e.stopPropagation();

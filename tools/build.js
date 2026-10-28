@@ -212,6 +212,7 @@ const UI_ICONS = {
   pdf: '<svg class="btn-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>',
   moon: '<svg class="btn-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>',
   sun: '<svg class="btn-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>',
+  sidebarToggle: '<svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>',
 
   // Section Specific SVGs
   user: '<svg class="nav-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>',
@@ -431,18 +432,6 @@ function compileFile(fileRel, allFiles, markedParser) {
   const depth = fileRel.split(path.sep).length - 1;
   const rootRel = depth === 0 ? './' : '../'.repeat(depth);
 
-  // TOC HTML
-  let tocHtml = '';
-  if (toc.length > 0) {
-    tocHtml = `
-<div id="toc-container">
-  <div class="toc-title">On this page</div>
-  <ul class="toc-list">
-    ${toc.map(t => `<li class="toc-item h${t.level}"><a href="#${t.id}">${escapeHtml(t.text)}</a></li>`).join('\n    ')}
-  </ul>
-</div>`;
-  }
-
   const fullHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -452,12 +441,18 @@ function compileFile(fileRel, allFiles, markedParser) {
   <link rel="stylesheet" href="${rootRel}assets/style.css">
 </head>
 <body data-root="${rootRel}">
+  <script>(function(){if(localStorage.getItem('wiki-sidebar-collapsed')==='1'){document.body.classList.add('sidebar-collapsed');}})();</script>
   <!-- Sidebar -->
   <aside id="sidebar">
-    <a href="${rootRel}index.html" class="sidebar-brand">
-      <span class="logo-icon">${UI_ICONS.logo}</span>
-      <span>Vimwiki</span>
-    </a>
+    <div class="sidebar-header">
+      <a href="${rootRel}index.html" class="sidebar-brand">
+        <span class="logo-icon">${UI_ICONS.logo}</span>
+        <span>Vimwiki</span>
+      </a>
+      <button id="sidebar-collapse-btn" class="sidebar-toggle-btn" title="Hide sidebar (⌘B)" aria-label="Hide sidebar">
+        ${UI_ICONS.sidebarToggle}
+      </button>
+    </div>
     <button class="search-trigger" aria-label="Search notes">
       <span class="search-trigger-content">
         <span class="search-icon">${UI_ICONS.search}</span>
@@ -474,9 +469,14 @@ function compileFile(fileRel, allFiles, markedParser) {
   <div id="main-wrapper">
     <!-- Top Bar -->
     <header id="top-bar">
-      <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">${UI_ICONS.menu}</button>
-      <div class="breadcrumbs">
-        ${breadcrumbsHtml}
+      <div class="top-bar-left">
+        <button id="sidebar-expand-btn" class="sidebar-expand-btn" title="Show sidebar (⌘B)" aria-label="Show sidebar">
+          ${UI_ICONS.sidebarToggle}
+        </button>
+        <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Toggle menu">${UI_ICONS.menu}</button>
+        <div class="breadcrumbs">
+          ${breadcrumbsHtml}
+        </div>
       </div>
       <div class="top-bar-actions">
         <button id="print-pdf-btn" class="btn-icon" title="Print or Export to PDF">
@@ -495,7 +495,6 @@ function compileFile(fileRel, allFiles, markedParser) {
       <main id="article-content">
         ${parsedHtml}
       </main>
-      ${tocHtml}
     </div>
   </div>
 
